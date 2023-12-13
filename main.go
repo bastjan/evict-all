@@ -28,10 +28,12 @@ func init() {
 
 func main() {
 	var ns, asUser, labelSel, nsLabelSel string
+	var dryRun bool
 	flag.StringVar(&ns, "namespace", "default", "namespace to evict pods from")
 	flag.StringVar(&asUser, "as", "", "impersonate user")
 	flag.StringVar(&labelSel, "l", "", "label selector to filter pods by")
 	flag.StringVar(&nsLabelSel, "lns", "", "label selector to filter namespaces by, overrides the namespace flag")
+	flag.BoolVar(&dryRun, "dry-run", false, "dry run")
 
 	flag.Parse()
 
@@ -68,7 +70,7 @@ func main() {
 
 	var errs error
 	for _, ns := range nsl.Items {
-		errs = multierr.Append(errs, evict(cl, ns.Name, parsedSel))
+		errs = multierr.Append(errs, evict(cl, ns.Name, parsedSel, dryRun))
 	}
 
 	if errs != nil {
@@ -77,7 +79,7 @@ func main() {
 	}
 }
 
-func evict(cl client.Client, ns string, sel labels.Selector) error {
+func evict(cl client.Client, ns string, sel labels.Selector, dryRun bool) error {
 	var pl corev1.PodList
 	if err := cl.List(context.Background(), &pl, client.InNamespace(ns), client.MatchingLabelsSelector{
 		Selector: sel,
@@ -86,11 +88,22 @@ func evict(cl client.Client, ns string, sel labels.Selector) error {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Evicting %d pods from %q\n", len(pl.Items), ns)
+	var dryRunOpts []string
+	var dryRunMessage string
+	if dryRun {
+		dryRunOpts = []string{"All"}
+		dryRunMessage = " (dry run)"
+	}
+
+	fmt.Printf("Evicting %d pods from %q%s\n", len(pl.Items), ns, dryRunMessage)
 	var errs error
 	for _, p := range pl.Items {
-		fmt.Println("Evicting", ns, "/", p.Name)
-		errs = multierr.Append(errs, cl.SubResource("eviction").Create(context.Background(), &p, &policyv1.Eviction{}))
+		fmt.Printf("Evicting %s/%s%s\n", ns, p.Name, dryRunMessage)
+		errs = multierr.Append(errs, cl.SubResource("eviction").Create(context.Background(), &p, &policyv1.Eviction{
+			DeleteOptions: &metav1.DeleteOptions{
+				DryRun: dryRunOpts,
+			},
+		}))
 	}
 
 	return errs
