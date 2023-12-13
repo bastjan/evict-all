@@ -41,13 +41,13 @@ func main() {
 	cfg.Impersonate.UserName = asUser
 	cl, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
-		fmt.Println("failed to create client")
+		fmt.Println("failed to create client", err)
 		os.Exit(1)
 	}
 
 	parsedSel, err := labels.Parse(labelSel)
 	if err != nil {
-		fmt.Println("failed to parse label selector")
+		fmt.Println("failed to parse label selector", err)
 		os.Exit(1)
 	}
 
@@ -55,13 +55,13 @@ func main() {
 	if nsLabelSel != "" {
 		parsedNsSel, err := labels.Parse(nsLabelSel)
 		if err != nil {
-			fmt.Println("failed to parse label selector")
+			fmt.Println("failed to parse namespace label selector", err)
 			os.Exit(1)
 		}
 		if err := cl.List(context.Background(), &nsl, client.MatchingLabelsSelector{
 			Selector: parsedNsSel,
 		}); err != nil {
-			fmt.Println("failed to list namespaces")
+			fmt.Println("failed to list namespaces", err)
 			os.Exit(1)
 		}
 	} else {
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	if errs != nil {
-		fmt.Println("failed to evict pods")
+		fmt.Println("failed to evict pods", errs)
 		os.Exit(1)
 	}
 }
@@ -84,7 +84,7 @@ func evict(cl client.Client, ns string, sel labels.Selector, dryRun bool) error 
 	if err := cl.List(context.Background(), &pl, client.InNamespace(ns), client.MatchingLabelsSelector{
 		Selector: sel,
 	}); err != nil {
-		fmt.Println("failed to list pods")
+		fmt.Println("failed to list pods", err)
 		os.Exit(1)
 	}
 
