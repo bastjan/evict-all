@@ -1,6 +1,6 @@
 module github.com/bastjan/evict-all
 
-go 1.21.5
+go 1.22.1
 
 require (
 	go.uber.org/multierr v1.11.0
