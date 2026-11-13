@@ -6,7 +6,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
-	k8s.io/client-go v0.29.0
+	k8s.io/client-go v11.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.16.3
 )
 
